@@ -28,13 +28,15 @@ module Fluent
       @loop = Coolio::Loop.new
       @lsock = listen
       @loop.attach(@lsock)
+      @loop_breaker = Coolio::AsyncWatcher.new
+      @loop.attach(@loop_breaker)
       @thread = Thread.new(&method(:run))
       @cached_unpacker = $use_msgpack_5 ? nil : MessagePack::Unpacker.new
     end
 
     def shutdown
-      @loop.watchers.each {|w| w.detach }
       @loop.stop
+      @loop_breaker.signal
       @lsock.close
       @thread.join
     end
