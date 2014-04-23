@@ -104,12 +104,15 @@ module Fluent
       @handler = listen(callback)
       @loop.attach(@handler)
 
+      @loop_breaker = Coolio::AsyncWatcher.new
+      @loop.attach(@loop_breaker)
+
       @thread = Thread.new(&method(:run))
     end
 
     def shutdown
-      @loop.watchers.each {|w| w.detach }
       @loop.stop
+      @loop_breaker.signal
       @handler.close
       @thread.join
     end
